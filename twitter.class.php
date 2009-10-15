@@ -11,7 +11,8 @@
  * DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
  * ( Fair License - http://www.opensource.org/licenses/fair.php )
  * Short license: do whatever you like with this.
- * 
+ *
+ * komode: le=unix language=php codepage=utf8 tab=4 notabs indent=4
  */
 class Twitter {
 
@@ -71,7 +72,7 @@ class Twitter {
      * Fetches a tweet by its number/id
      *
      * @param int $num the tweet id/number
-     * @return string (false 
+     * @return string (null on failure)
      */
     public function getTweetByNum($num) {
         if (!is_numeric($num)) {
@@ -99,6 +100,13 @@ class Twitter {
             return false;
         }
         return $tweet;
+    }
+    
+    /**
+     * fetches mentions for a user
+     */
+    public function getMentions($sinceId=null, $count=200) {
+        return json_decode(file_get_contents($this->getUrlMentions($sinceId, $count)));
     }
 
     /**
@@ -165,4 +173,16 @@ class Twitter {
     public function getUrlOutputStatus(StdClass $tweet) {
         return $this->baseUrl . urlencode($tweet->user->screen_name) . '/statuses/' . urlencode($tweet->id);
     }
+    
+    /**
+     * Return mentions URL
+     */
+    public function getUrlMentions($sinceId=null, $count=200) {
+        $url = $this->baseUrlFull . 'statuses/mentions.json?count=' . urlencode($count);
+        if ($sinceId !== null) {
+            $url .= '&since_id=' . urlencode($sinceId);
+        }
+        return $url;
+    }
+
 }
