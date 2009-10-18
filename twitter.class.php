@@ -105,7 +105,7 @@ class Twitter {
     /**
      * fetches mentions for a user
      */
-    public function getMentions($sinceId=null, $count=200) {
+    public function getMentions($sinceId=null, $count=20) {
         return json_decode(file_get_contents($this->getUrlMentions($sinceId, $count)));
     }
     
@@ -139,6 +139,38 @@ class Twitter {
         $response = json_decode($response);
         return $response;
     }
+    
+    /**
+     * fetches DMs for a user
+     */
+    public function getDMs($sinceId=null, $count=20, $page=1) {
+        return json_decode(file_get_contents($this->getUrlDMs($sinceId, $count, $page)));
+    }
+    
+    /**
+     * Send DM
+     */
+    public function sendDM($screenName, $text) {
+        $data = http_build_query(array('screen_name'=>$screenName, 'text'=>$text));
+        $params = array(
+            'http' => array(
+                'method' => 'POST',
+                'content' => $data,
+                'header' => 'Content-type: application/x-www-form-urlencoded',
+            )
+        );
+        $ctx = stream_context_create($params);
+        $fp = fopen($this->getUrlSendDM(), 'rb', false, $ctx);
+        if (!$fp) {
+            return false;
+        }
+        $response = stream_get_contents($fp);
+        if ($response === false) {
+            return false;
+        }
+        $response = json_decode($response);
+        return $response;
+    }
 
     /**
      * Sends a tweet
@@ -146,7 +178,10 @@ class Twitter {
      * @param string $txt the tweet text to send
      * @return string URL of tweet (or false on failure)
      */
-    public function sendTweet($txt) {
+    public function sendTweet($txt, $limit=true) {
+        if ($limit) {
+            $txt = substr($txt, 0, 140); // twitter message size limit
+        }
         $data = 'status=' . urlencode($txt);
         $params = array(
             'http' => array(
@@ -208,7 +243,7 @@ class Twitter {
     /**
      * Return mentions URL
      */
-    public function getUrlMentions($sinceId=null, $count=200) {
+    public function getUrlMentions($sinceId=null, $count=20) {
         $url = $this->baseUrlFull . 'statuses/mentions.json?count=' . urlencode($count);
         if ($sinceId !== null) {
             $url .= '&since_id=' . urlencode($sinceId);
@@ -229,5 +264,24 @@ class Twitter {
     public function getUrlFollow($userid) {
         return $this->baseUrlFull . 'friendships/create/' . ((int) $userid) . '.json';
     }
+    
+    /**
+     * Returns the get DMs URL
+     */
+    public function getUrlDMs($sinceId=null, $count=20, $page=1) {
+        $url = $this->baseUrlFull . 'direct_messages.json?';
+        if ($sinceId !== null) {
+            $url .= 'since_id=' . urlencode($sinceId);
+        }
+        $url .= "&page={$page}";
+        $url .= "&count={$count}";
+        return $url;
+    }
 
+    /**
+     * Returns the send DM URL
+     */
+    public function getURLSendDM() {
+        return $this->baseUrlFull . 'direct_messages/new.json';
+    }
 }
