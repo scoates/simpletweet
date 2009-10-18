@@ -108,6 +108,37 @@ class Twitter {
     public function getMentions($sinceId=null, $count=200) {
         return json_decode(file_get_contents($this->getUrlMentions($sinceId, $count)));
     }
+    
+    /**
+     * Fetches followers for a user
+     */
+    public function getFollowers($cursor=-1) {
+        return json_decode(file_get_contents($this->getUrlFollowers($cursor)));
+    }
+    
+    /**
+     * Follow a userid
+     */
+    public function follow($userId) {
+        $params = array(
+            'http' => array(
+                'method' => 'POST',
+                'content' => array(),
+                'header' => 'Content-type: application/x-www-form-urlencoded',
+            )
+        );
+        $ctx = stream_context_create($params);
+        $fp = fopen($this->getUrlFollow($userId), 'rb', false, $ctx);
+        if (!$fp) {
+            return false;
+        }
+        $response = stream_get_contents($fp);
+        if ($response === false) {
+            return false;
+        }
+        $response = json_decode($response);
+        return $response;
+    }
 
     /**
      * Sends a tweet
@@ -183,6 +214,20 @@ class Twitter {
             $url .= '&since_id=' . urlencode($sinceId);
         }
         return $url;
+    }
+    
+    /**
+     * Returns the followers URL
+     */
+    public function getUrlFollowers($cursor=-1) {
+        return $this->baseUrlFull . 'statuses/followers.json?cursor=' . ((int)$cursor);
+    }
+    
+    /**
+     * Returns the follow-user URL
+     */
+    public function getUrlFollow($userid) {
+        return $this->baseUrlFull . 'friendships/create/' . ((int) $userid) . '.json';
     }
 
 }
